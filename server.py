@@ -76,11 +76,10 @@ def extract_video():
         'format': 'best[ext=mp4]/best',
         'extractor_args': {
             'youtube': {
-                # 'tv' and 'web_creator' currently expose progressive
-                # formats more reliably than android/ios/mweb, which
-                # have increasingly been restricted to DASH-only or
-                # PO-token-gated formats.
-                'player_client': ['tv', 'web_creator', 'android', 'ios', 'mweb']
+                # Try clients in order of current reliability. tv_embedded
+                # and tv have had better luck avoiding YouTube's bot
+                # checks recently; the rest are fallbacks.
+                'player_client': ['tv_embedded', 'tv', 'web_creator', 'android', 'ios', 'mweb']
             }
         },
         'http_headers': {
