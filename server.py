@@ -18,13 +18,13 @@ def fetch_youtube_api(video_url):
         "https://cobalt-api.kwiatek.xyz/",
         "https://api.co.wuk.sh/"
     ]
-    
+
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
-    
+
     payload = {
         "url": video_url,
         "videoQuality": "720"
@@ -48,7 +48,7 @@ def fetch_youtube_api(video_url):
 @app.route('/download', methods=['GET'])
 def extract_video():
     video_url = request.args.get('url')
-    
+
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
@@ -65,9 +65,22 @@ def extract_video():
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
+        # IMPORTANT: force a single combined (progressive) stream.
+        # Without this, yt-dlp's default selector tries to grab a
+        # separate best-video + best-audio pair meant for ffmpeg
+        # merging, which fails with "Requested format is not
+        # available" whenever the chosen client only exposes
+        # DASH/adaptive-only streams. Since this endpoint needs to
+        # hand back ONE direct URL, we must restrict to formats that
+        # already contain both audio and video.
+        'format': 'best[ext=mp4]/best',
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'mweb']
+                # 'tv' and 'web_creator' currently expose progressive
+                # formats more reliably than android/ios/mweb, which
+                # have increasingly been restricted to DASH-only or
+                # PO-token-gated formats.
+                'player_client': ['tv', 'web_creator', 'android', 'ios', 'mweb']
             }
         },
         'http_headers': {
@@ -81,16 +94,16 @@ def extract_video():
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            
+
             if 'entries' in info and len(info['entries']) > 0:
                 info = info['entries'][0]
 
             media_url = info.get('url')
-            
+
             # Find combined (video + audio) progressive stream
             if not media_url and info.get('formats'):
                 progressive_formats = [
-                    f for f in info['formats'] 
+                    f for f in info['formats']
                     if f.get('url') and f.get('vcodec') != 'none' and f.get('acodec') != 'none'
                 ]
                 if progressive_formats:
@@ -100,13 +113,13 @@ def extract_video():
                         if fmt.get('url') and fmt.get('url').startswith('http'):
                             media_url = fmt['url']
                             break
-            
+
             if media_url:
                 return jsonify({
                     'download_url': media_url,
                     'original_url': video_url
                 })
-            
+
             return jsonify({'message': 'Could not extract direct media URL.'}), 400
 
     except Exception as e:
