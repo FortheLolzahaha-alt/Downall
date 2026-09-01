@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Video Downloader</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .input-group { display: flex; gap: 8px; margin-bottom: 1rem; }
+    input[type="url"] { flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.95rem; outline: none; }
+    input[type="url"]:focus { border-color: #3b82f6; }
+    button { padding: 12px 20px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
+    #status { margin-top: 1rem; font-size: 0.9rem; color: #94a3b8; word-break: break-all; }
+    .success-btn { display: inline-block; margin-top: 10px; padding: 10px 16px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Video Downloader</h1>
+    <form id="downloadForm">
+      <div class="input-group">
+        <input type="url" id="videoUrl" placeholder="Paste video link here..." required>
+        <button type="submit" id="submitBtn">Fetch</button>
+      </div>
+    </form>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('downloadForm');
+    const statusDiv = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const videoUrl = document.getElementById('videoUrl').value;
+
+      statusDiv.innerHTML = "Processing request...";
+      submitBtn.disabled = true;
+
+      try {
+        // Replace 'YOUR_BACKEND_API_URL' with your active server endpoint
+        const response = await fetch(`http://localhost:5000/download?url=${encodeURIComponent(videoUrl)}`);
+        const data = await response.json();
+
+        if (response.ok && data.download_url) {
+          statusDiv.innerHTML = `
+            <p>Video extracted successfully!</p>
+            <a href="${data.download_url}" class="success-btn" download target="_blank">Download Video</a>
+          `;
+        } else {
+          statusDiv.innerHTML = `<span style="color: #ef4444;">Error: ${data.message || 'Failed to extract video.'}</span>`;
+        }
+      } catch (err) {
+        statusDiv.innerHTML = `<span style="color: #ef4444;">Network error or backend server unavailable.</span>`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
