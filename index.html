@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Downloader</title>
+    <title>DownAll - Media Downloader</title>
+
+    <link rel="icon" type="image/x-icon" href="YOUR_ICON_URL_HERE">
+    
     <style>
         * {
             box-sizing: border-box;
@@ -13,169 +16,465 @@
         }
 
         body {
-            background-color: #1a2332;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: #0d0d0d;
+            color: #e0e0e0;
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
+        /* Navbar */
+        .navbar {
+            width: 100%;
+            background-color: #121212;
+            border-bottom: 1px solid #222;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left, .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-icon-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        /* Main Container */
         .container {
             width: 100%;
-            max-width: 520px;
+            max-width: 960px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Hero Header */
+        h1.hero-title {
+            color: #ffffff;
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
             text-align: center;
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px 16px;
+        p.hero-subtitle {
+            color: #888;
             font-size: 1rem;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background-color: #e2e8f0;
-            color: #0f172a;
-            outline: none;
+            margin-bottom: 30px;
+            text-align: center;
         }
 
-        input[type="text"]:focus {
-            border-color: #2563eb;
-        }
-
-        button.btn-fetch {
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            background-color: #2563eb;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button.btn-fetch:hover {
-            background-color: #1d4ed8;
-        }
-
-        .yt-btn {
-            display: inline-block;
+        /* Downloader Box */
+        .downloader-card {
             width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            background-color: #ff0000;
+            max-width: 720px;
+            background-color: #141414;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .downloader-card input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 0.95rem;
+            padding: 10px 14px;
+        }
+
+        .btn-paste {
+            background-color: #2d181e;
+            color: #f87171;
+            border: 1px solid #4a1d28;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-download {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #3a3a3a;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn-download:hover {
+            background-color: #333;
+        }
+
+        .disclaimer {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* YouTube Redirect Button */
+        .yt-redirect-container {
+            width: 100%;
+            max-width: 720px;
+            margin-bottom: 30px;
+        }
+
+        .yt-alt-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            background-color: #dc2626;
             color: #ffffff;
             text-decoration: none;
             font-weight: bold;
+            font-size: 0.95rem;
             border-radius: 8px;
             text-align: center;
             transition: background 0.2s ease;
         }
 
-        .yt-btn:hover {
-            background-color: #cc0000;
+        .yt-alt-btn:hover {
+            background-color: #b91c1c;
         }
 
+        /* Result Area & Action Buttons */
         #result {
-            margin-top: 20px;
-            word-break: break-all;
-            font-size: 0.95rem;
+            width: 100%;
+            max-width: 720px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        .error {
-            color: #ef4444;
+        .result-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        .success a {
+        .download-link-btn {
             display: inline-block;
-            margin-top: 12px;
-            padding: 10px 20px;
-            background-color: #10b981;
-            color: #ffffff;
+            padding: 12px 24px;
+            background-color: #22c55e;
+            color: white;
             text-decoration: none;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: bold;
+            transition: background 0.2s;
         }
 
-        .success a:hover {
-            background-color: #059669;
+        .download-link-btn:hover {
+            background-color: #16a34a;
+        }
+
+        .mp3-convert-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .mp3-convert-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* Info Banner Box */
+        .info-box {
+            width: 100%;
+            border: 1px solid #262626;
+            border-radius: 6px;
+            padding: 16px;
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            background-color: #111;
+        }
+
+        /* Red to Blue Link Styling */
+        .info-box a.red-text,
+        .info-box a.red-text:link {
+            color: #ef4444; /* Default Red */
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .info-box a.red-text:hover,
+        .info-box a.red-text:visited,
+        .info-box a.red-text:active {
+            color: #3b82f6; /* Turns Blue when hovered or visited */
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            .downloader-card {
+                flex-direction: column;
+            }
+            .downloader-card input {
+                width: 100%;
+            }
+        }
+
+        .section-title {
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-desc {
+            color: #888;
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        /* Accordion */
+        .accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .accordion-item {
+            background-color: #121212;
+            border: 1px solid #222;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            color: #ccc;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion-header:hover {
+            color: #fff;
+        }
+
+        .accordion-body {
+            display: none;
+            padding: 12px 16px;
+            font-size: 0.82rem;
+            color: #777;
+            border-top: 1px solid #222;
+            background-color: #0a0a0a;
+        }
+
+        .accordion-item.active .accordion-body {
+            display: block;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Video Downloader</h1>
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="#" class="brand">
+                <span>⬇</span> DownAll
+            </a>
+            <a href="#" class="nav-link">How to use?</a>
+            <a href="#" class="nav-link">More ▾</a>
+            <a href="https://cloudconvert.com/mp4-to-mp3" target="_blank" class="nav-link">Video to MP3</a>
+        </div>
+        <div class="nav-right">
+            <button class="nav-icon-btn">🌐</button>
+            <button class="nav-icon-btn">⚙</button>
+            <button class="nav-icon-btn">⣿</button>
+        </div>
+    </header>
 
-        <div class="input-group">
-            <input type="text" id="urlInput" placeholder="Paste link here...">
-            <button class="btn-fetch" id="fetchBtn">Fetch</button>
+    <div class="container">
+        <h1 class="hero-title">DownAll Video Downloader</h1>
+        <p class="hero-subtitle">Free. No signup. Download now.</p>
+
+        <div class="downloader-card">
+            <input type="text" id="urlInput" placeholder="Paste your video link">
+            <button class="btn-paste" id="pasteBtn">📋 Paste</button>
+            <button class="btn-download" id="downloadBtn">⬇ Download</button>
         </div>
 
-        <a href="https://app.ytdown.to/en38/" target="_blank" class="yt-btn">
-            Open YouTube Downloader (ytdown) ↗
-        </a>
+        <p class="disclaimer">Copyrighted content is not available for download with this tool. ⓘ</p>
+
+        <div class="yt-redirect-container">
+            <a href="https://app.ytdown.to/en38/" target="_blank" class="yt-alt-btn">
+                Open YouTube Downloader (ytdown) ↗
+            </a>
+        </div>
 
         <div id="result"></div>
+
+        <div class="info-box">
+            - DownAll is a free, web-based media downloader and is not affiliated with any software or paid products.<br>
+            - We now support converting videos to MP3 and M4A. <a href="https://cloudconvert.com/mp4-to-mp3" target="_blank" class="red-text">Try it now.</a>
+        </div>
+
+        <div class="content-grid">
+            <div>
+                <div class="section-title">☁ Best Media Downloader</div>
+                <p class="section-desc">
+                    DownAll is one of the best video downloaders for MP3 and MP4 formats. It offers a free, easy-to-use tool that allows you to save videos (up to 1080p), Shorts, and media from various sites with just one click. Whether you want to download a high-resolution video or simply extract audio, DownAll makes the process fast and simple.
+                </p>
+            </div>
+
+            <div>
+                <div class="section-title">❓ Frequently Asked Questions</div>
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">1. Where are downloads saved? <span>▼</span></div>
+                        <div class="accordion-body">Files are typically saved in your device's default "Downloads" folder.</div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header">2. How to convert videos to MP3? <span>▼</span></div>
+                        <div class="accordion-body">Use the "Turn it into Mp3?" button after generating your download link.</div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header">3. How long does it take to process links using DownAll? <span>▼</span></div>
+                        <div class="accordion-body">Downloads usually process in a few seconds depending on video size.</div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header">4. Is it safe to download videos with DownAll? <span>▼</span></div>
+                        <div class="accordion-body">Yes, our web tool is completely safe and requires no installation.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const BACKEND_URL = "https://downall.onrender.com";
 
-        document.getElementById('fetchBtn').addEventListener('click', async () => {
-            const inputUrl = document.getElementById('urlInput').value.trim();
+        // Clipboard Paste Button Functionality
+        document.getElementById('pasteBtn').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('urlInput').value = text;
+            } catch (err) {
+                alert('Please allow clipboard access or paste manually.');
+            }
+        });
+
+        // Accordions Toggle
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const item = header.parentElement;
+                item.classList.toggle('active');
+            });
+        });
+
+        // Download Action
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            const urlInput = document.getElementById('urlInput').value.trim();
             const resultDiv = document.getElementById('result');
-            resultDiv.className = '';
-            resultDiv.innerHTML = '';
 
-            if (!inputUrl) {
-                resultDiv.className = 'error';
-                resultDiv.innerText = 'Error: Please enter a URL.';
+            resultDiv.innerHTML = "";
+
+            if (!urlInput) {
+                resultDiv.innerHTML = '<p style="color: #ef4444;">Please paste a video URL.</p>';
                 return;
             }
 
-            // Redirect YouTube links straight to ytdown
-            if (inputUrl.includes('youtube.com') || inputUrl.includes('youtu.be')) {
+            // Redirect YouTube links directly to ytdown external tool
+            if (urlInput.includes('youtube.com') || urlInput.includes('youtu.be')) {
                 window.open('https://app.ytdown.to/en38/', '_blank');
-                resultDiv.innerHTML = 'Opening ytdown for YouTube video...';
+                resultDiv.innerHTML = '<p style="color: #38bdf8;">Opening YouTube Downloader in a new tab...</p>';
                 return;
             }
 
-            // Process all other websites through Render backend
-            resultDiv.innerText = 'Fetching download stream...';
+            // Process other sites via Render Backend
+            resultDiv.innerHTML = '<p style="color: #aaa;">Extracting media link...</p>';
 
             try {
-                const response = await fetch(`${BACKEND_URL}/download?url=${encodeURIComponent(inputUrl)}`);
+                const response = await fetch(`${BACKEND_URL}/download?url=${encodeURIComponent(urlInput)}`);
                 const data = await response.json();
 
                 if (response.ok && data.download_url) {
-                    const proxyUrl = `${BACKEND_URL}/proxy?media_url=${encodeURIComponent(data.download_url)}&original_url=${encodeURIComponent(data.original_url || inputUrl)}`;
+                    const proxyUrl = `${BACKEND_URL}/proxy?media_url=${encodeURIComponent(data.download_url)}&original_url=${encodeURIComponent(data.original_url)}`;
                     
-                    resultDiv.className = 'success';
                     resultDiv.innerHTML = `
-                        <p>Media extracted successfully!</p>
-                        <a href="${proxyUrl}" download="video.mp4">Download Video</a>
+                        <div class="result-actions">
+                            <a href="${proxyUrl}" class="download-link-btn" download>Download Media File</a>
+                            <a href="https://cloudconvert.com/mp4-to-mp3" target="_blank" class="mp3-convert-btn">Turn it into Mp3? ↗</a>
+                        </div>
                     `;
                 } else {
-                    resultDiv.className = 'error';
-                    resultDiv.innerHTML = `Error: ${data.message || 'Failed to extract stream.'}`;
+                    resultDiv.innerHTML = `<p style="color: #ef4444;">Error: ${data.message || 'Failed to extract URL.'}</p>`;
                 }
             } catch (err) {
-                resultDiv.className = 'error';
-                resultDiv.innerHTML = `Error: Unable to reach backend server. ${err.message}`;
+                resultDiv.innerHTML = `<p style="color: #ef4444;">Failed to connect to backend server.</p>`;
             }
         });
     </script>
