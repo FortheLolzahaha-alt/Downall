@@ -61,25 +61,14 @@ def extract_video():
                 'original_url': video_url
             })
 
-    # 2. Standard yt-dlp Extraction (with format fallback)
+    # 2. Standard yt-dlp Extraction
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        # IMPORTANT: force a single combined (progressive) stream.
-        # Without this, yt-dlp's default selector tries to grab a
-        # separate best-video + best-audio pair meant for ffmpeg
-        # merging, which fails with "Requested format is not
-        # available" whenever the chosen client only exposes
-        # DASH/adaptive-only streams. Since this endpoint needs to
-        # hand back ONE direct URL, we must restrict to formats that
-        # already contain both audio and video.
-        'format': 'best[ext=mp4]/best',
         'extractor_args': {
             'youtube': {
-                # Try clients in order of current reliability. tv_embedded
-                # and tv have had better luck avoiding YouTube's bot
-                # checks recently; the rest are fallbacks.
-                'player_client': ['tv_embedded', 'tv', 'web_creator', 'android', 'ios', 'mweb']
+                # 'ios' and 'android' bypass the "page needs to be reloaded" web check
+                'player_client': ['ios', 'android', 'mweb']
             }
         },
         'http_headers': {
