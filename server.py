@@ -11,6 +11,32 @@ CORS(app)
 def home():
     return "API Backend is up and running!"
 
+def fetch_youtube_video(video_url):
+    """Fallback handler for YouTube links using external API endpoints"""
+    try:
+        # Request stream conversion from Cobalt API (open-source YouTube downloader backend)
+        api_url = "https://api.cobalt.tools/api/json"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "url": video_url,
+            "vCodec": "h264"
+        }
+        
+        res = requests.post(api_url, json=payload, headers=headers, timeout=10)
+        data = res.json()
+        
+        if data.get("url"):
+            return data["url"]
+        elif data.get("picker"):
+            return data["picker"][0]["url"]
+    except Exception as e:
+        print(f"YouTube external API error: {e}")
+    
+    return None
+
 @app.route('/download', methods=['GET'])
 def extract_video():
     video_url = request.args.get('url')
@@ -18,24 +44,24 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
+    # Handle YouTube links via third-party API service
+    if 'youtube.com' in video_url or 'youtu.be' in video_url:
+        yt_stream_url = fetch_youtube_video(video_url)
+        if yt_stream_url:
+            return jsonify({
+                'download_url': yt_stream_url,
+                'original_url': video_url
+            })
+
+    # Standard yt-dlp handling for non-YouTube sites
     ydl_opts = {
         'format': 'best',
         'quiet': True,
         'no_warnings': True,
-        # Force YouTube to handle requests via Android/iOS player clients
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'ios', 'mweb']
-            }
-        },
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         }
     }
-
-    # Automatically use cookies.txt if it exists in your root folder
-    if os.path.exists('cookies.txt'):
-        ydl_opts['cookiefile'] = 'cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
