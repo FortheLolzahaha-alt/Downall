@@ -25,12 +25,9 @@ def extract_video():
             'original_url': video_url
         })
 
-    # Standard yt-dlp Extraction for non-YouTube links
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        # FORCE yt-dlp to find a single, pre-merged playable file (preferably MP4). 
-        # This prevents it from returning .m3u8 manifest files that corrupt the download.
         'format': 'best[ext=mp4]/best', 
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -45,11 +42,14 @@ def extract_video():
                 info = info['entries'][0]
 
             media_url = info.get('url')
+            # Extract exact HTTP headers yt-dlp used to authenticate with CDN
+            extracted_headers = info.get('http_headers', {})
 
             if media_url:
                 return jsonify({
                     'download_url': media_url,
-                    'original_url': video_url
+                    'original_url': video_url,
+                    'headers': extracted_headers
                 })
 
             return jsonify({'message': 'Could not extract direct media URL.'}), 400
@@ -57,38 +57,45 @@ def extract_video():
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
-@app.route('/proxy', methods=['GET'])
+@app.route('/proxy', methods=['GET', 'POST'])
 def proxy_stream():
-    media_url = request.args.get('media_url')
-    original_url = request.args.get('original_url', '')
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        media_url = data.get('media_url')
+        custom_headers = data.get('headers', {})
+    else:
+        media_url = request.args.get('media_url')
+        custom_headers = {}
 
     if not media_url:
         return "Missing media URL", 400
 
+    # Fallback default headers
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': original_url
+        'Referer': 'https://www.tiktok.com/' if 'tiktok.com' in media_url else request.args.get('original_url', '')
     }
+
+    # Merge yt-dlp extracted headers to bypass 403 blocks
+    headers.update(custom_headers)
+
+    # Ensure TikTok referer is always explicitly formatted
+    if 'tiktok.com' in media_url:
+        headers['Referer'] = 'https://www.tiktok.com/'
 
     try:
         req = requests.get(media_url, headers=headers, stream=True)
-        
-        # VERY IMPORTANT: Raise an exception if the server blocked the request (e.g. 403 Forbidden)
-        # Without this, Flask streams the 403 HTML error page and saves it as an "MP4".
-        req.raise_for_status() 
-
-        # Pull the actual content type from the request rather than assuming video/mp4
-        content_type = req.headers.get('Content-Type', 'video/mp4')
+        req.raise_for_status()
 
         return Response(
             stream_with_context(req.iter_content(chunk_size=1024 * 1024)),
-            content_type=content_type,
+            content_type=req.headers.get('Content-Type', 'video/mp4'),
             headers={
                 'Content-Disposition': 'attachment; filename="video.mp4"'
             }
         )
     except requests.exceptions.RequestException as e:
-        return f"Proxy stream error: Failed to fetch video from source. The server might be blocking proxy requests. Detail: {str(e)}", 500
+        return f"Proxy stream error: {str(e)}", 500
     except Exception as e:
         return f"Proxy stream error: {str(e)}", 500
 
