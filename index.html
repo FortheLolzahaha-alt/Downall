@@ -161,11 +161,14 @@
             margin-bottom: 20px;
         }
 
-        /* YouTube Redirect Button */
+        /* Redirect Buttons Container */
         .yt-redirect-container {
             width: 100%;
             max-width: 720px;
             margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .yt-alt-btn {
@@ -184,6 +187,24 @@
 
         .yt-alt-btn:hover {
             background-color: #b91c1c;
+        }
+
+        .tiktok-alt-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            background-color: #fe2c55;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            text-align: center;
+            transition: background 0.2s ease;
+        }
+
+        .tiktok-alt-btn:hover {
+            background-color: #e02648;
         }
 
         /* Result Area & Action Buttons */
@@ -245,10 +266,9 @@
             background-color: #111;
         }
 
-        /* Red to Blue Link Styling */
         .info-box a.red-text,
         .info-box a.red-text:link {
-            color: #ef4444; /* Default Red */
+            color: #ef4444;
             cursor: pointer;
             text-decoration: underline;
             transition: color 0.2s ease;
@@ -257,7 +277,7 @@
         .info-box a.red-text:hover,
         .info-box a.red-text:visited,
         .info-box a.red-text:active {
-            color: #3b82f6; /* Turns Blue when hovered or visited */
+            color: #3b82f6;
         }
 
         /* Content Grid */
@@ -373,6 +393,9 @@
             <a href="https://app.ytdown.to/en38/" target="_blank" class="yt-alt-btn">
                 Open YouTube Downloader (ytdown) ↗
             </a>
+            <a href="http://tikdown.com/" target="_blank" class="tiktok-alt-btn">
+                Open TikTok Downloader (tikdown) ↗
+            </a>
         </div>
 
         <div id="result"></div>
@@ -451,6 +474,13 @@
             if (urlInput.includes('youtube.com') || urlInput.includes('youtu.be')) {
                 window.open('https://app.ytdown.to/en38/', '_blank');
                 resultDiv.innerHTML = '<p style="color: #38bdf8;">Opening YouTube Downloader in a new tab...</p>';
+                return;
+            }
+
+            // Redirect TikTok links directly to tikdown external tool
+            if (urlInput.includes('tiktok.com')) {
+                window.open('http://tikdown.com/', '_blank');
+                resultDiv.innerHTML = '<p style="color: #38bdf8;">Opening TikTok Downloader in a new tab...</p>';
                 return;
             }
 
