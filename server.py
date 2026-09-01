@@ -11,8 +11,8 @@ CORS(app)
 def home():
     return "API Backend is up and running!"
 
-def fetch_youtube_video(video_url):
-    """Cycle through multiple API instances to bypass rate limits"""
+def fetch_youtube_api(video_url):
+    """Attempts to fetch YouTube stream via multi-instance external APIs."""
     instances = [
         "https://api.cobalt.tools/",
         "https://cobalt-api.kwiatek.xyz/",
@@ -52,26 +52,33 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
-    # 1. YouTube Handler: External API with multi-instance redundancy
+    # 1. Attempt YouTube API Bypass
     if 'youtube.com' in video_url or 'youtu.be' in video_url:
-        yt_stream_url = fetch_youtube_video(video_url)
+        yt_stream_url = fetch_youtube_api(video_url)
         if yt_stream_url:
             return jsonify({
                 'download_url': yt_stream_url,
                 'original_url': video_url
             })
-        else:
-            return jsonify({'message': 'Failed to extract YouTube video via API.'}), 500
 
-    # 2. Standard yt-dlp Handler for other sites
+    # 2. Standard yt-dlp Extraction (with cookies.txt support)
     ydl_opts = {
         'format': 'best',
         'quiet': True,
         'no_warnings': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'mweb']
+            }
+        },
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         }
     }
+
+    # Automatically pass cookies.txt if present in root folder
+    if os.path.exists('cookies.txt'):
+        ydl_opts['cookiefile'] = 'cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -115,15 +122,17 @@ def proxy_stream():
         'Referer': original_url
     }
 
-    req = requests.get(media_url, headers=headers, stream=True)
-    
-    return Response(
-        stream_with_context(req.iter_content(chunk_size=1024 * 1024)),
-        content_type=req.headers.get('Content-Type', 'video/mp4'),
-        headers={
-            'Content-Disposition': 'attachment; filename="video.mp4"'
-        }
-    )
+    try:
+        req = requests.get(media_url, headers=headers, stream=True)
+        return Response(
+            stream_with_context(req.iter_content(chunk_size=1024 * 1024)),
+            content_type=req.headers.get('Content-Type', 'video/mp4'),
+            headers={
+                'Content-Disposition': 'attachment; filename="video.mp4"'
+            }
+        )
+    except Exception as e:
+        return f"Proxy stream error: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
