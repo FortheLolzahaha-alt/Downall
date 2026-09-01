@@ -45,7 +45,7 @@
 
       try {
         // Replace 'YOUR_BACKEND_API_URL' with your active server endpoint
-        const response = await fetch(`http://localhost:5000/download?url=${encodeURIComponent(videoUrl)}`);
+        const response = await fetch(`https://downall.onrender.com/download?url=${encodeURIComponent(videoUrl)}`);
         const data = await response.json();
 
         if (response.ok && data.download_url) {
