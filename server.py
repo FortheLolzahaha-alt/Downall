@@ -11,40 +11,6 @@ CORS(app)
 def home():
     return "API Backend is up and running!"
 
-def fetch_youtube_api(video_url):
-    """Attempts to fetch YouTube stream via multi-instance external APIs."""
-    instances = [
-        "https://api.cobalt.tools/",
-        "https://cobalt-api.kwiatek.xyz/",
-        "https://api.co.wuk.sh/"
-    ]
-
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    }
-
-    payload = {
-        "url": video_url,
-        "videoQuality": "720"
-    }
-
-    for instance in instances:
-        try:
-            res = requests.post(instance, json=payload, headers=headers, timeout=8)
-            if res.status_code == 200:
-                data = res.json()
-                if data.get("url"):
-                    return data["url"]
-                elif data.get("picker") and len(data["picker"]) > 0:
-                    return data["picker"][0]["url"]
-        except Exception as e:
-            print(f"Error fetching from {instance}: {e}")
-            continue
-
-    return None
-
 @app.route('/download', methods=['GET'])
 def extract_video():
     video_url = request.args.get('url')
@@ -52,32 +18,21 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
-    # 1. Attempt YouTube API Bypass
+    # Redirect YouTube links directly to external downloader
     if 'youtube.com' in video_url or 'youtu.be' in video_url:
-        yt_stream_url = fetch_youtube_api(video_url)
-        if yt_stream_url:
-            return jsonify({
-                'download_url': yt_stream_url,
-                'original_url': video_url
-            })
+        return jsonify({
+            'download_url': 'https://app.ytdown.to/en38/',
+            'original_url': video_url
+        })
 
-    # 2. Standard yt-dlp Extraction
+    # Standard yt-dlp Extraction for non-YouTube links
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'extractor_args': {
-            'youtube': {
-                # 'ios' and 'android' bypass the "page needs to be reloaded" web check
-                'player_client': ['ios', 'android', 'mweb']
-            }
-        },
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         }
     }
-
-    if os.path.exists('cookies.txt'):
-        ydl_opts['cookiefile'] = 'cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -87,20 +42,6 @@ def extract_video():
                 info = info['entries'][0]
 
             media_url = info.get('url')
-
-            # Find combined (video + audio) progressive stream
-            if not media_url and info.get('formats'):
-                progressive_formats = [
-                    f for f in info['formats']
-                    if f.get('url') and f.get('vcodec') != 'none' and f.get('acodec') != 'none'
-                ]
-                if progressive_formats:
-                    media_url = progressive_formats[-1]['url']
-                else:
-                    for fmt in reversed(info['formats']):
-                        if fmt.get('url') and fmt.get('url').startswith('http'):
-                            media_url = fmt['url']
-                            break
 
             if media_url:
                 return jsonify({
