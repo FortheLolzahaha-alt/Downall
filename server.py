@@ -16,7 +16,6 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
-    # Pass browser headers to prevent HTTP 403 Forbidden errors
     ydl_opts = {
         'format': 'best',
         'quiet': True,
@@ -32,8 +31,23 @@ def extract_video():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
             
-            # Extract direct media stream URL
-            media_url = info.get('url') or (info.get('requested_downloads', [{}])[0].get('url'))
+            # Extract first video if the URL returns a playlist or entry list
+            if 'entries' in info and len(info['entries']) > 0:
+                info = info['entries'][0]
+
+            # 1. Try standard top-level direct URL
+            media_url = info.get('url')
+            
+            # 2. Check requested downloads dictionary
+            if not media_url and info.get('requested_downloads'):
+                media_url = info['requested_downloads'][0].get('url')
+                
+            # 3. Fallback: Parse the formats array for the highest quality stream
+            if not media_url and info.get('formats'):
+                for fmt in reversed(info['formats']):
+                    if fmt.get('url') and fmt.get('url').startswith('http'):
+                        media_url = fmt['url']
+                        break
             
             if media_url:
                 return jsonify({'download_url': media_url})
