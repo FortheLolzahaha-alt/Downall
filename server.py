@@ -12,9 +12,7 @@ def home():
     return "API Backend is up and running!"
 
 def fetch_youtube_video(video_url):
-    """Fallback handler for YouTube links using external API endpoints"""
     try:
-        # Request stream conversion from Cobalt API (open-source YouTube downloader backend)
         api_url = "https://api.cobalt.tools/api/json"
         headers = {
             "Accept": "application/json",
@@ -24,7 +22,6 @@ def fetch_youtube_video(video_url):
             "url": video_url,
             "vCodec": "h264"
         }
-        
         res = requests.post(api_url, json=payload, headers=headers, timeout=10)
         data = res.json()
         
@@ -33,8 +30,7 @@ def fetch_youtube_video(video_url):
         elif data.get("picker"):
             return data["picker"][0]["url"]
     except Exception as e:
-        print(f"YouTube external API error: {e}")
-    
+        print(f"YouTube API error: {e}")
     return None
 
 @app.route('/download', methods=['GET'])
@@ -44,7 +40,7 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
-    # Handle YouTube links via third-party API service
+    # 1. YouTube Handler: Routes through API, never calls yt-dlp
     if 'youtube.com' in video_url or 'youtu.be' in video_url:
         yt_stream_url = fetch_youtube_video(video_url)
         if yt_stream_url:
@@ -52,8 +48,10 @@ def extract_video():
                 'download_url': yt_stream_url,
                 'original_url': video_url
             })
+        else:
+            return jsonify({'message': 'Failed to extract YouTube video via API.'}), 500
 
-    # Standard yt-dlp handling for non-YouTube sites
+    # 2. Standard yt-dlp Handler: Used for all other websites (Newgrounds, etc.)
     ydl_opts = {
         'format': 'best',
         'quiet': True,
