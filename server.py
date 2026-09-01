@@ -61,9 +61,8 @@ def extract_video():
                 'original_url': video_url
             })
 
-    # 2. Standard yt-dlp Extraction (with cookies.txt support)
+    # 2. Standard yt-dlp Extraction (with format fallback)
     ydl_opts = {
-        'format': 'best',
         'quiet': True,
         'no_warnings': True,
         'extractor_args': {
@@ -76,7 +75,6 @@ def extract_video():
         }
     }
 
-    # Automatically pass cookies.txt if present in root folder
     if os.path.exists('cookies.txt'):
         ydl_opts['cookiefile'] = 'cookies.txt'
 
@@ -89,14 +87,19 @@ def extract_video():
 
             media_url = info.get('url')
             
-            if not media_url and info.get('requested_downloads'):
-                media_url = info['requested_downloads'][0].get('url')
-                
+            # Find combined (video + audio) progressive stream
             if not media_url and info.get('formats'):
-                for fmt in reversed(info['formats']):
-                    if fmt.get('url') and fmt.get('url').startswith('http'):
-                        media_url = fmt['url']
-                        break
+                progressive_formats = [
+                    f for f in info['formats'] 
+                    if f.get('url') and f.get('vcodec') != 'none' and f.get('acodec') != 'none'
+                ]
+                if progressive_formats:
+                    media_url = progressive_formats[-1]['url']
+                else:
+                    for fmt in reversed(info['formats']):
+                        if fmt.get('url') and fmt.get('url').startswith('http'):
+                            media_url = fmt['url']
+                            break
             
             if media_url:
                 return jsonify({
