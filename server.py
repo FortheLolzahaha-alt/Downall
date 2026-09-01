@@ -29,6 +29,9 @@ def extract_video():
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
+        # FORCE yt-dlp to find a single, pre-merged playable file (preferably MP4). 
+        # This prevents it from returning .m3u8 manifest files that corrupt the download.
+        'format': 'best[ext=mp4]/best', 
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         }
@@ -69,13 +72,23 @@ def proxy_stream():
 
     try:
         req = requests.get(media_url, headers=headers, stream=True)
+        
+        # VERY IMPORTANT: Raise an exception if the server blocked the request (e.g. 403 Forbidden)
+        # Without this, Flask streams the 403 HTML error page and saves it as an "MP4".
+        req.raise_for_status() 
+
+        # Pull the actual content type from the request rather than assuming video/mp4
+        content_type = req.headers.get('Content-Type', 'video/mp4')
+
         return Response(
             stream_with_context(req.iter_content(chunk_size=1024 * 1024)),
-            content_type=req.headers.get('Content-Type', 'video/mp4'),
+            content_type=content_type,
             headers={
                 'Content-Disposition': 'attachment; filename="video.mp4"'
             }
         )
+    except requests.exceptions.RequestException as e:
+        return f"Proxy stream error: Failed to fetch video from source. The server might be blocking proxy requests. Detail: {str(e)}", 500
     except Exception as e:
         return f"Proxy stream error: {str(e)}", 500
 
