@@ -12,25 +12,37 @@ def home():
     return "API Backend is up and running!"
 
 def fetch_youtube_video(video_url):
-    try:
-        api_url = "https://api.cobalt.tools/api/json"
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "url": video_url,
-            "vCodec": "h264"
-        }
-        res = requests.post(api_url, json=payload, headers=headers, timeout=10)
-        data = res.json()
-        
-        if data.get("url"):
-            return data["url"]
-        elif data.get("picker"):
-            return data["picker"][0]["url"]
-    except Exception as e:
-        print(f"YouTube API error: {e}")
+    """Cycle through multiple API instances to bypass rate limits"""
+    instances = [
+        "https://api.cobalt.tools/",
+        "https://cobalt-api.kwiatek.xyz/",
+        "https://api.co.wuk.sh/"
+    ]
+    
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
+    
+    payload = {
+        "url": video_url,
+        "videoQuality": "720"
+    }
+
+    for instance in instances:
+        try:
+            res = requests.post(instance, json=payload, headers=headers, timeout=8)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("url"):
+                    return data["url"]
+                elif data.get("picker") and len(data["picker"]) > 0:
+                    return data["picker"][0]["url"]
+        except Exception as e:
+            print(f"Error fetching from {instance}: {e}")
+            continue
+
     return None
 
 @app.route('/download', methods=['GET'])
@@ -40,7 +52,7 @@ def extract_video():
     if not video_url:
         return jsonify({'message': 'No URL provided'}), 400
 
-    # 1. YouTube Handler: Routes through API, never calls yt-dlp
+    # 1. YouTube Handler: External API with multi-instance redundancy
     if 'youtube.com' in video_url or 'youtu.be' in video_url:
         yt_stream_url = fetch_youtube_video(video_url)
         if yt_stream_url:
@@ -51,7 +63,7 @@ def extract_video():
         else:
             return jsonify({'message': 'Failed to extract YouTube video via API.'}), 500
 
-    # 2. Standard yt-dlp Handler: Used for all other websites (Newgrounds, etc.)
+    # 2. Standard yt-dlp Handler for other sites
     ydl_opts = {
         'format': 'best',
         'quiet': True,
